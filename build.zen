@@ -1,0 +1,28 @@
+const std = @import("std");
+const Builder = std.build.Builder;
+
+pub fn build(b: *mut Builder) void {
+    const target = std.zen.CrossTarget.parse(.{
+        .arch_os_abi = "wasm32-freestanding",
+    }) catch return;
+        
+    //const mode = b.standardReleaseOptions();
+    const mode = .ReleaseSmall;
+    
+    const lib = b.addStaticLibrary("main", "src/main.zen");
+    lib.setOutputDir("./");
+    lib.setTarget(target);
+    lib.setBuildMode(mode);
+    lib.setStrip(true);
+    // exe.emit_asm = true; // privateでNG、setEmitがない
+    lib.install();
+    
+    // wasm-strip main.wasm
+    const args = [_][]u8 {
+        "wasm-strip",
+        "main.wasm",
+    };
+    const wasm = b.addSystemCommand(&args);
+    const strip_step = b.step("strip", "Strip the wasm");
+    b.addStepDependency(strip_step, wasm);
+}
